@@ -6,7 +6,7 @@
     <title>Calendario de Eventos</title>
 </head>
 <body>
-    <h1>Todos los eventos y webinars del ecosistema emprendedor</h1>
+    <h1>Todos los eventos y webinars del ecosistema emprendedor!</h1>
     <button id="createEventBtn">Crea tu evento</button>
     <div id="eventTable">
         <table>
