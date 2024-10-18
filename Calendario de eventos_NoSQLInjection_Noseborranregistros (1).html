@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todos los eventos y webinars del ecosistema emprendedor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #eventModal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        #modalContent {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 30%;
+        }
+
+        .form-field {
+            margin-bottom: 10px;
+        }
+
+        .form-field input, .form-field select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .close {
+            color: red;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover, .close:focus {
+            color: darkred;
+            cursor: pointer;
+        }
+
+        .error {
+            color: red;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Todos los eventos y webinars del ecosistema emprendedor</h1>
+
+<button id="createEventButton">Crea tu Evento</button>
+
+<table>
+    <thead>
+        <tr>
+            <th>Evento</th>
+            <th>Organizador</th>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Lugar</th>
+            <th>Link de Evento</th>
+        </tr>
+    </thead>
+    <tbody id="eventTableBody">
+        <!-- Los eventos se agregarán aquí dinámicamente -->
+    </tbody>
+</table>
+
+<!-- Modal para crear nuevo evento -->
+<div id="eventModal">
+    <div id="modalContent">
+        <span class="close" id="closeModal">&times;</span>
+        <h2>Crear nuevo evento</h2>
+        <div class="form-field">
+            <label for="eventName">Nombre del Evento</label>
+            <input type="text" id="eventName" required>
+            <div class="error" id="eventNameError"></div>
+        </div>
+        <div class="form-field">
+            <label for="organizer">Organizador</label>
+            <input type="text" id="organizer" required>
+            <div class="error" id="organizerError"></div>
+        </div>
+        <div class="form-field">
+            <label for="eventDate">Fecha</label>
+            <input type="date" id="eventDate" required>
+            <div class="error" id="eventDateError"></div>
+        </div>
+        <div class="form-field">
+            <label for="eventTime">Hora</label>
+            <select id="eventTime" required>
+                <option value="">Selecciona una hora</option>
+                <!-- Opciones de hora cada 30 minutos -->
+                <script>
+                    for (let hour = 0; hour < 24; hour++) {
+                        for (let minute = 0; minute < 60; minute += 30) {
+                            const formattedHour = String(hour).padStart(2, '0');
+                            const formattedMinute = String(minute).padStart(2, '0');
+                            document.write(`<option value="${formattedHour}:${formattedMinute}">${formattedHour}:${formattedMinute}</option>`);
+                        }
+                    }
+                </script>
+            </select>
+            <div class="error" id="eventTimeError"></div>
+        </div>
+        <div class="form-field">
+            <label for="eventPlace">Lugar</label>
+            <input type="text" id="eventPlace" required>
+            <div class="error" id="eventPlaceError"></div>
+        </div>
+        <div class="form-field">
+            <label for="eventLink">Link del Evento</label>
+            <input type="url" id="eventLink" required>
+            <div class="error" id="eventLinkError"></div>
+        </div>
+        <button id="addEventButton">Agregar Evento</button>
+    </div>
+</div>
+
+<script>
+    // Obtener referencias a los elementos
+    const createEventButton = document.getElementById('createEventButton');
+    const eventModal = document.getElementById('eventModal');
+    const closeModal = document.getElementById('closeModal');
+    const addEventButton = document.getElementById('addEventButton');
+    const eventTableBody = document.getElementById('eventTableBody');
+
+    // Cargar eventos del almacenamiento local
+    loadEvents();
+
+    // Abrir modal para crear evento
+    createEventButton.onclick = function() {
+        eventModal.style.display = 'block';
+    };
+
+    // Cerrar el modal
+    closeModal.onclick = function() {
+        eventModal.style.display = 'none';
+    };
+
+    // Cuando se haga clic fuera del modal, se cierra
+    window.onclick = function(event) {
+        if (event.target == eventModal) {
+            eventModal.style.display = 'none';
+        }
+    };
+
+    // Función para validar campos
+    function validateField(field, errorElement, pattern) {
+        if (!field.value.match(pattern)) {
+            errorElement.textContent = 'Entrada no válida. Solo se permiten letras y números.';
+            return false;
+        }
+        errorElement.textContent = '';
+        return true;
+    }
+
+    // Función para cargar eventos del almacenamiento local
+    function loadEvents() {
+        const events = JSON.parse(localStorage.getItem('events')) || [];
+        events.forEach(event => addEventRow(event));
+    }
+
+    // Función para agregar evento a la tabla
+    addEventButton.onclick = function() {
+        // Obtener los valores de los campos del formulario
+        const eventName = document.getElementById('eventName');
+        const organizer = document.getElementById('organizer');
+        const eventDate = document.getElementById('eventDate');
+        const eventTime = document.getElementById('eventTime');
+        const eventPlace = document.getElementById('eventPlace');
+        const eventLink = document.getElementById('eventLink');
+
+        // Validar campos
+        const isEventNameValid = validateField(eventName, document.getElementById('eventNameError'), /^[A-Za-z0-9 ]+$/);
+        const isOrganizerValid = validateField(organizer, document.getElementById('organizerError'), /^[A-Za-z0-9 ]+$/);
+        const isEventDateValid = eventDate.value !== '';
+        const isEventTimeValid = eventTime.value !== '';
+        const isEventPlaceValid = validateField(eventPlace, document.getElementById('eventPlaceError'), /^[A-Za-z0-9 ]+$/);
+        const isEventLinkValid = eventLink.validity.valid;
+
+        if (isEventNameValid && isOrganizerValid && isEventDateValid && isEventTimeValid && isEventPlaceValid && isEventLinkValid) {
+            // Crear un objeto evento
+            const event = {
+                name: eventName.value,
+                organizer: organizer.value,
+                date: eventDate.value,
+                time: eventTime.value,
+                place: eventPlace.value,
+                link: eventLink.value
+            };
+
+            // Agregar evento a la tabla y al almacenamiento local
+            addEventRow(event);
+            saveEvent(event);
+
+            // Limpiar el formulario
+            eventName.value = '';
+            organizer.value = '';
+            eventDate.value = '';
+            eventTime.value = '';
+            eventPlace.value = '';
+            eventLink.value = '';
+
+            // Cerrar el modal
+            eventModal.style.display = 'none';
+        } else {
+            if (!isEventNameValid) {
+                eventName.focus();
+            } else if (!isOrganizerValid) {
+                organizer.focus();
+            } else if (!isEventPlaceValid) {
+                eventPlace.focus();
+            } else if (!isEventLinkValid) {
+                eventLink.focus();
+            }
+        }
+    };
+
+    // Función para agregar una fila a la tabla
+    function addEventRow(event) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${event.name}</td>
+            <td>${event.organizer}</td>
+            <td>${event.date}</td>
+            <td>${event.time}</td>
+            <td>${event.place}</td>
+            <td><a href="${event.link}" target="_blank">${event.link}</a></td>
+        `;
+        eventTableBody.appendChild(row);
+    }
+
+    // Función para guardar el evento en el almacenamiento local
+    function saveEvent(event) {
+        const events = JSON.parse(localStorage.getItem('events')) || [];
+        events.push(event);
+        localStorage.setItem('events', JSON.stringify(events));
+    }
+</script>
+
+</body>
+</html>
